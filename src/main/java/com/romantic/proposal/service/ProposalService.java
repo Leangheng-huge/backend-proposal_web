@@ -25,10 +25,19 @@ public class ProposalService {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
 
+    /**
+     * Creates a new proposal for the given user.
+     *
+     * @param user        The user creating the proposal.
+     * @param frontendUrl The frontend URL to generate a shareable link.
+     * @return ProposalResponse containing details of the created proposal.
+     */
     @Transactional
     public ProposalResponse createProposal(User user, String frontendUrl) {
         String uniqueToken = UUID.randomUUID().toString().replace("-", "");
         String shareableLink = frontendUrl + "?proposal=" + uniqueToken;
+
+        System.out.println("✅ Creating proposal with link: " + shareableLink);
 
         Proposal proposal = Proposal.builder()
                 .user(user)
@@ -46,6 +55,13 @@ public class ProposalService {
                 .build();
     }
 
+    /**
+     * Responds to a proposal identified by its unique token.
+     *
+     * @param uniqueToken The unique token of the proposal.
+     * @param request     The response request containing YES/NO.
+     * @return A map indicating the status of the response.
+     */
     @Transactional
     public Map<String, String> respondToProposal(String uniqueToken, RespondRequest request) {
         Proposal proposal = proposalRepository.findByUniqueToken(uniqueToken)
@@ -55,16 +71,13 @@ public class ProposalService {
             throw new ProposalAlreadyAnsweredException("This proposal has already been answered");
         }
 
-        Proposal.ProposalResponse response = Proposal.ProposalResponse.valueOf(request.getResponse());
+        Proposal.ProposalResponse response = Proposal.ProposalResponse.valueOf(request.getResponse().toUpperCase());
         proposal.setResponse(response);
         proposal.setRespondedAt(LocalDateTime.now());
         proposalRepository.save(proposal);
 
-        // Create notification for user
-        String notificationMessage = response == Proposal.ProposalResponse.YES
-                ? "Congratulations!! I am so, so happy for you! You totally deserve this."
-                : "It's okay to feel disappointed/sad/angry. Take all the time you need to process it.";
-
+        // Create notification
+        String notificationMessage = getNotificationMessage(response);
         Notification notification = Notification.builder()
                 .proposal(proposal)
                 .user(proposal.getUser())
@@ -72,16 +85,51 @@ public class ProposalService {
                 .build();
         notificationRepository.save(notification);
 
-        // Send email notification
-        emailService.sendProposalResponseEmail(
-                proposal.getUser().getEmail(),
-                request.getResponse(),
-                proposal.getShareableLink()
-        );
+        // Send email
+        emailService.sendProposalResponseEmail(proposal.getUser().getEmail(), request.getResponse(), proposal.getShareableLink());
+
+        System.out.println("✅ Proposal responded: " + request.getResponse());
 
         Map<String, String> responseMap = new HashMap<>();
         responseMap.put("message", "Response recorded successfully");
         responseMap.put("status", "success");
+
         return responseMap;
+    }
+
+    /**
+     * Retrieves the status of a proposal for a given user.
+     *
+     * @param proposalId The ID of the proposal.
+     * @param user       The user who owns the proposal.
+     * @return StatusResponse containing whether it was answered and related info.
+     */
+    public StatusResponse getProposalStatus(UUID proposalId, User user) {
+        Proposal proposal = proposalRepository.findByIdAndUser(proposalId, user)
+                .orElseThrow(() -> new ProposalNotFoundException("Proposal not found"));
+
+        boolean answered = proposal.getResponse() != null;
+        String response = answered ? proposal.getResponse().name() : null;
+        String notification = answered ? getNotificationMessage(proposal.getResponse()) : null;
+
+        return StatusResponse.builder()
+                .answered(answered)
+                .response(response)
+                .notification(notification)
+                .build();
+    }
+
+    /**
+     * Helper method to generate notification messages based on response.
+     *
+     * @param response YES/NO response.
+     * @return Notification message string.
+     */
+    private String getNotificationMessage(Proposal.ProposalResponse response) {
+        if (response == Proposal.ProposalResponse.YES) {
+            return "Congratulations!! I am so, so happy for you! You totally deserve this.";
+        } else {
+            return "It's okay to feel disappointed/sad/angry. Take all the time you need to process it.";
+        }
     }
 }

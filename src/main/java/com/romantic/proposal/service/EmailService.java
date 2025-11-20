@@ -17,6 +17,13 @@ public class EmailService {
     @Value("${app.email.from}")
     private String fromEmail;
 
+    /**
+     * Sends an email notifying the recipient about a proposal response.
+     *
+     * @param toEmail       The recipient's email address.
+     * @param response      The response to the proposal ("YES" or any other value).
+     * @param proposalLink  The link to the proposal.
+     */
     public void sendProposalResponseEmail(String toEmail, String response, String proposalLink) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -25,31 +32,37 @@ public class EmailService {
 
             if ("YES".equalsIgnoreCase(response)) {
                 message.setSubject("🎉 Great News! Someone Accepted Your Proposal!");
-                message.setText(
-                        "Congratulations!! 🎉🎉\n\n" +
-                                "Someone accepted your romantic proposal!\n\n" +
-                                "I am so, so happy for you! You totally deserve this. 💕\n\n" +
-                                "Proposal Link: " + proposalLink + "\n\n" +
-                                "Best wishes,\n" +
-                                "Romantic Proposal App"
-                );
+                message.setText(buildAcceptedProposalMessage(proposalLink));
             } else {
                 message.setSubject("💙 Response to Your Proposal");
-                message.setText(
-                        "Hello,\n\n" +
-                                "Someone has responded to your romantic proposal.\n\n" +
-                                "It's okay to feel disappointed, sad, or angry. Take all the time you need to process it. 💙\n\n" +
-                                "Proposal Link: " + proposalLink + "\n\n" +
-                                "Take care,\n" +
-                                "Romantic Proposal App"
-                );
+                message.setText(buildRejectedProposalMessage(proposalLink));
             }
 
             mailSender.send(message);
-            log.info("✅ Email sent successfully to: {}", toEmail);
+            log.info("Email sent successfully to: {}", toEmail);
 
         } catch (Exception e) {
-            log.error("❌ Failed to send email to: {}", toEmail, e);
+            log.error("Failed to send email to: {}", toEmail, e);
+            // Avoid throwing exceptions to prevent breaking the app
         }
+    }
+
+    private String buildAcceptedProposalMessage(String proposalLink) {
+        return "Congratulations!! 🎉🎉\n\n" +
+                "Someone accepted your romantic proposal!\n\n" +
+                "I am so, so happy for you! You totally deserve this. 💕\n\n" +
+                "Proposal Link: " + proposalLink + "\n\n" +
+                "Best wishes,\n" +
+                "Romantic Proposal App";
+    }
+
+    private String buildRejectedProposalMessage(String proposalLink) {
+        return "Hello,\n\n" +
+                "Someone has responded to your romantic proposal.\n\n" +
+                "It's okay to feel disappointed, sad, or angry. Take all the time you need to process it. 💙\n\n" +
+                "Remember, this doesn't define your worth. Keep your head up!\n\n" +
+                "Proposal Link: " + proposalLink + "\n\n" +
+                "Take care,\n" +
+                "Romantic Proposal App";
     }
 }
