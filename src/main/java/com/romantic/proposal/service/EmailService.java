@@ -18,11 +18,11 @@ public class EmailService {
     private String fromEmail;
 
     /**
-     * Sends an email notifying the recipient about a proposal response.
+     * Sends an email notification to the user about the response to their proposal.
      *
-     * @param toEmail       The recipient's email address.
-     * @param response      The response to the proposal ("YES" or any other value).
-     * @param proposalLink  The link to the proposal.
+     * @param toEmail      Recipient email address
+     * @param response     Proposal response ("YES" or other)
+     * @param proposalLink Link to view the proposal
      */
     public void sendProposalResponseEmail(String toEmail, String response, String proposalLink) {
         try {
@@ -31,38 +31,41 @@ public class EmailService {
             message.setTo(toEmail);
 
             if ("YES".equalsIgnoreCase(response)) {
-                message.setSubject("🎉 Great News! Someone Accepted Your Proposal!");
-                message.setText(buildAcceptedProposalMessage(proposalLink));
+                preparePositiveResponseEmail(message, proposalLink);
             } else {
-                message.setSubject("💙 Response to Your Proposal");
-                message.setText(buildRejectedProposalMessage(proposalLink));
+                prepareNegativeResponseEmail(message, proposalLink);
             }
 
             mailSender.send(message);
-            log.info("Email sent successfully to: {}", toEmail);
-
+            log.info("✅ Email sent successfully to: {}", toEmail);
         } catch (Exception e) {
-            log.error("Failed to send email to: {}", toEmail, e);
-            // Avoid throwing exceptions to prevent breaking the app
+            log.error("❌ Failed to send email to: {}", toEmail, e);
+            // Do not throw exception: email failure should not break the app
         }
     }
 
-    private String buildAcceptedProposalMessage(String proposalLink) {
-        return "Congratulations!! 🎉🎉\n\n" +
-                "Someone accepted your romantic proposal!\n\n" +
-                "I am so, so happy for you! You totally deserve this. 💕\n\n" +
-                "Proposal Link: " + proposalLink + "\n\n" +
-                "Best wishes,\n" +
-                "Romantic Proposal App";
+    private void preparePositiveResponseEmail(SimpleMailMessage message, String proposalLink) {
+        message.setSubject("🎉 Great News! Someone Accepted Your Proposal!");
+        message.setText(
+                "Congratulations!! 🎉🎉\n\n" +
+                        "Someone accepted your romantic proposal!\n\n" +
+                        "I am so, so happy for you! You totally deserve this. 💕\n\n" +
+                        "Proposal Link: " + proposalLink + "\n\n" +
+                        "Best wishes,\n" +
+                        "Romantic Proposal App"
+        );
     }
 
-    private String buildRejectedProposalMessage(String proposalLink) {
-        return "Hello,\n\n" +
-                "Someone has responded to your romantic proposal.\n\n" +
-                "It's okay to feel disappointed, sad, or angry. Take all the time you need to process it. 💙\n\n" +
-                "Remember, this doesn't define your worth. Keep your head up!\n\n" +
-                "Proposal Link: " + proposalLink + "\n\n" +
-                "Take care,\n" +
-                "Romantic Proposal App";
+    private void prepareNegativeResponseEmail(SimpleMailMessage message, String proposalLink) {
+        message.setSubject("💙 Response to Your Proposal");
+        message.setText(
+                "Hello,\n\n" +
+                        "Someone has responded to your romantic proposal.\n\n" +
+                        "It's okay to feel disappointed, sad, or angry. Take all the time you need to process it. 💙\n\n" +
+                        "Remember, this doesn't define your worth. Keep your head up!\n\n" +
+                        "Proposal Link: " + proposalLink + "\n\n" +
+                        "Take care,\n" +
+                        "Romantic Proposal App"
+        );
     }
 }
