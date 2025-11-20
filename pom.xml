@@ -93,6 +93,16 @@
         </dependency>
     </dependencies>
 
+    <!-- Maven Profiles for Different Environments -->
+    <profiles>
+        <profile>
+            <id>production</id>
+            <properties>
+                <spring.profiles.active>prod</spring.profiles.active>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
