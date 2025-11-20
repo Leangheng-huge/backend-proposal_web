@@ -44,25 +44,32 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        // FIXED: allow both /auth/** and /api/auth/**
+                        // --- Allow frontend files (fixes 403 on "/") ---
+                        .requestMatchers("/", "/index.html", "/favicon.ico",
+                                "/static/**", "/assets/**").permitAll()
+
+                        // --- Public auth routes ---
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // proposal respond allowed
+                        // --- Public proposal respond ---
                         .requestMatchers("/api/proposal/*/respond").permitAll()
 
                         .requestMatchers("/error").permitAll()
+
                         .anyRequest().authenticated()
                 )
 
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // H2 Console
+    // Allow H2 console
     @Bean
     @Profile("default")
     public SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -75,7 +82,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
+            throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -83,15 +91,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
+        // Allow multiple origins
         config.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
 
+        // Allow all HTTP methods
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
-        // FIXED: Allow ALL headers so OPTIONS doesn't get blocked
+        // Important: allow all headers (fixes CORS preflight 403)
         config.setAllowedHeaders(List.of("*"));
 
         config.setExposedHeaders(List.of("Authorization"));
-
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
