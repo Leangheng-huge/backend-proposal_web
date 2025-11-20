@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -43,9 +44,7 @@ public class SecurityConfig {
                         // Public endpoints - NO authentication required
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/proposal/*/respond").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()  // Development only!
                         .requestMatchers("/error").permitAll()
-
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
@@ -54,9 +53,18 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // For H2 Console (Development only!)
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+        return http.build();
+    }
 
+    // H2 Console Configuration - ONLY for development profile
+    @Bean
+    @Profile("default")
+    public SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/h2-console/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .csrf(csrf -> csrf.disable())
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()));
         return http.build();
     }
 
