@@ -11,6 +11,7 @@ import com.romantic.proposal.repository.ProposalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,13 +28,7 @@ public class ProposalService {
     @Transactional
     public ProposalResponse createProposal(User user, String frontendUrl) {
         String uniqueToken = UUID.randomUUID().toString().replace("-", "");
-
-        // ✅ FIXED: Create frontend URL with query parameter instead of backend URL
-        // OLD: String shareableLink = baseUrl + "/proposal/" + uniqueToken;
-        // NEW: Use query parameter for frontend
         String shareableLink = frontendUrl + "?proposal=" + uniqueToken;
-
-        System.out.println("✅ Creating proposal with link: " + shareableLink);
 
         Proposal proposal = Proposal.builder()
                 .user(user)
@@ -75,7 +70,6 @@ public class ProposalService {
                 .user(proposal.getUser())
                 .message(notificationMessage)
                 .build();
-
         notificationRepository.save(notification);
 
         // Send email notification
@@ -85,32 +79,9 @@ public class ProposalService {
                 proposal.getShareableLink()
         );
 
-        System.out.println("✅ Proposal responded: " + request.getResponse());
-
         Map<String, String> responseMap = new HashMap<>();
         responseMap.put("message", "Response recorded successfully");
         responseMap.put("status", "success");
         return responseMap;
-    }
-
-    public StatusResponse getProposalStatus(UUID proposalId, User user) {
-        Proposal proposal = proposalRepository.findByIdAndUser(proposalId, user)
-                .orElseThrow(() -> new ProposalNotFoundException("Proposal not found"));
-
-        boolean answered = proposal.getResponse() != null;
-        String response = answered ? proposal.getResponse().name() : null;
-        String notification = null;
-
-        if (answered) {
-            notification = proposal.getResponse() == Proposal.ProposalResponse.YES
-                    ? "Congratulations!! I am so, so happy for you! You totally deserve this."
-                    : "It's okay to feel disappointed/sad/angry. Take all the time you need to process it.";
-        }
-
-        return StatusResponse.builder()
-                .answered(answered)
-                .response(response)
-                .notification(notification)
-                .build();
     }
 }

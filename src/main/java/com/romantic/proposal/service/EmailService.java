@@ -23,7 +23,7 @@ public class EmailService {
             message.setFrom(fromEmail);
             message.setTo(toEmail);
 
-            if ("YES".equals(response)) {
+            if ("YES".equalsIgnoreCase(response)) {
                 message.setSubject("🎉 Great News! Someone Accepted Your Proposal!");
                 message.setText(
                         "Congratulations!! 🎉🎉\n\n" +
@@ -39,7 +39,6 @@ public class EmailService {
                         "Hello,\n\n" +
                                 "Someone has responded to your romantic proposal.\n\n" +
                                 "It's okay to feel disappointed, sad, or angry. Take all the time you need to process it. 💙\n\n" +
-                                "Remember, this doesn't define your worth. Keep your head up!\n\n" +
                                 "Proposal Link: " + proposalLink + "\n\n" +
                                 "Take care,\n" +
                                 "Romantic Proposal App"
@@ -47,11 +46,10 @@ public class EmailService {
             }
 
             mailSender.send(message);
-            log.info("Email sent successfully to: {}", toEmail);
+            log.info("✅ Email sent successfully to: {}", toEmail);
 
         } catch (Exception e) {
-            log.error("Failed to send email to: {}", toEmail, e);
-            // Don't throw exception - we don't want email failure to break the app
+            log.error("❌ Failed to send email to: {}", toEmail, e);
         }
     }
 }
