@@ -11,6 +11,7 @@ import com.romantic.proposal.exception.ProposalNotFoundException;
 import com.romantic.proposal.repository.NotificationRepository;
 import com.romantic.proposal.repository.ProposalRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProposalService {
@@ -43,7 +45,8 @@ public class ProposalService {
 
         proposal = proposalRepository.save(proposal);
 
-        System.out.println("✅ Creating proposal with link: " + shareableLink);
+        log.info("✅ Creating proposal with link: {}", shareableLink);
+        log.info("📝 Proposal ID: {}, User: {}", proposal.getId(), user.getEmail());
 
         return ProposalResponse.builder()
                 .proposalId(proposal.getId().toString())
@@ -58,10 +61,14 @@ public class ProposalService {
      */
     @Transactional
     public Map<String, String> respondToProposal(String uniqueToken, RespondRequest request) {
+        log.info("📬 Processing response for proposal token: {}", uniqueToken);
+        log.info("Response: {}", request.getResponse());
+
         Proposal proposal = proposalRepository.findByUniqueToken(uniqueToken)
                 .orElseThrow(() -> new ProposalNotFoundException("Invalid proposal token"));
 
         if (proposal.getResponse() != null) {
+            log.warn("⚠️ Proposal already answered: {}", uniqueToken);
             throw new ProposalAlreadyAnsweredException("This proposal has already been answered");
         }
 
@@ -69,6 +76,8 @@ public class ProposalService {
         proposal.setResponse(response);
         proposal.setRespondedAt(LocalDateTime.now());
         proposalRepository.save(proposal);
+
+        log.info("✅ Proposal response saved: {}", response);
 
         // Create notification
         String notificationMessage = getNotificationMessage(response);
@@ -79,14 +88,26 @@ public class ProposalService {
                 .build();
         notificationRepository.save(notification);
 
-        // Send email
-        emailService.sendProposalResponseEmail(
-                proposal.getUser().getEmail(),
-                request.getResponse(),
-                proposal.getShareableLink()
-        );
+        log.info("🔔 Notification created for user: {}", proposal.getUser().getEmail());
 
-        System.out.println("✅ Proposal responded: " + request.getResponse());
+        // Send email notification - wrapped in try-catch to prevent failure
+        try {
+            log.info("📧 Attempting to send email to: {}", proposal.getUser().getEmail());
+
+            emailService.sendProposalResponseEmail(
+                    proposal.getUser().getEmail(),
+                    request.getResponse(),
+                    proposal.getShareableLink()
+            );
+
+            log.info("✅ Email notification sent successfully to: {}", proposal.getUser().getEmail());
+        } catch (Exception e) {
+            log.error("❌ Failed to send email notification to: {}", proposal.getUser().getEmail(), e);
+            log.error("Error details: {}", e.getMessage());
+            // Don't throw - response should succeed even if email fails
+        }
+
+        log.info("✅ Proposal responded: {}", request.getResponse());
 
         Map<String, String> responseMap = new HashMap<>();
         responseMap.put("message", "Response recorded successfully");
@@ -99,12 +120,16 @@ public class ProposalService {
      * Get the current status of a proposal.
      */
     public StatusResponse getProposalStatus(UUID proposalId, User user) {
+        log.info("🔍 Fetching proposal status for ID: {}, User: {}", proposalId, user.getEmail());
+
         Proposal proposal = proposalRepository.findByIdAndUser(proposalId, user)
                 .orElseThrow(() -> new ProposalNotFoundException("Proposal not found"));
 
         boolean answered = proposal.getResponse() != null;
         String response = answered ? proposal.getResponse().name() : null;
         String notification = answered ? getNotificationMessage(proposal.getResponse()) : null;
+
+        log.info("📊 Proposal status - Answered: {}, Response: {}", answered, response);
 
         return StatusResponse.builder()
                 .answered(answered)
