@@ -12,12 +12,39 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+
+    // List of public endpoints that don't require JWT authentication
+    private static final List<String> PUBLIC_ENDPOINTS = Arrays.asList(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/proposal/*/respond",
+            "/api/proposal/*/accept",
+            "/api/proposal/*/reject"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        // Skip JWT filter for public endpoints
+        return PUBLIC_ENDPOINTS.stream().anyMatch(endpoint -> {
+            if (endpoint.contains("*")) {
+                // Handle wildcard patterns like "/api/proposal/*/respond"
+                String pattern = endpoint.replace("*", ".*");
+                return path.matches(pattern);
+            }
+            return path.equals(endpoint);
+        });
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
