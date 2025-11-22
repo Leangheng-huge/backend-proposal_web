@@ -14,4 +14,5 @@ public class ProposalResponse {
     private String uniqueToken;
     private String shareableLink;
     private String createdAt;
+    private String message;
 }
