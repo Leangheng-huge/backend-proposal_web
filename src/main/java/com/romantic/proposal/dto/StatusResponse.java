@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -13,4 +15,6 @@ public class StatusResponse {
     private boolean answered;
     private String response;
     private String notification;
+    private String proposalId;
+    private LocalDateTime answerAt;
 }
