@@ -41,6 +41,13 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Validation (for @Size, @NotBlank, @Email, etc.) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+
         <!-- CRITICAL: Spring Boot Mail Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
