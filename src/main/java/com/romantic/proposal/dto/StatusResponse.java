@@ -16,5 +16,5 @@ public class StatusResponse {
     private String response;
     private String notification;
     private String proposalId;
-    private LocalDateTime answerAt;
+    private LocalDateTime answeredAt;
 }

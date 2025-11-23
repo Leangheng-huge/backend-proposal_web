@@ -179,7 +179,7 @@ public class ProposalService {
         statusResponse.setAnswered(answered);
         statusResponse.setResponse(responseStr);
         statusResponse.setNotification(notificationMessage);
-        statusResponse.setAnswerAt(proposal.getRespondedAt());
+        statusResponse.setAnsweredAt(proposal.getRespondedAt());
 
         return statusResponse;
     }
